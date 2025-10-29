@@ -1,0 +1,29 @@
+# cloudbuild.yaml
+substitutions:
+  _REGION: "asia-south1"
+  _AR_REPO: "n8n"
+  _IMAGE: "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/n8n"
+  _VM_NAME: "n8n-01"
+  _VM_ZONE: "asia-south1-a"
+
+steps:
+  # Build & push image to Artifact Registry
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["build","-t","${_IMAGE}:${SHORT_SHA}","."]
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["push","${_IMAGE}:${SHORT_SHA}"]
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["tag","${_IMAGE}:${SHORT_SHA}","${_IMAGE}:latest"]
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["push","${_IMAGE}:latest"]
+
+  # Remotely reload the VM via IAP/OS Login and restart the container
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        gcloud compute ssh "${_VM_NAME}" \
+          --zone="${_VM_ZONE}" \
+          --tunnel-through-iap \
+          --command='cd /opt/n8n && sudo docker compose pull && sudo docker compose up -d --remove-orphans'
