@@ -1,7 +1,8 @@
 version: "3.9"
 services:
   n8n:
-    image: asia-south1-docker.pkg.dev/buzzi-ai/n8n/n8n:latest
+    image: n8nio/n8n:latest
+    #asia-south1-docker.pkg.dev/buzzi-ai/n8n/n8n:latest
     env_file: .env
     restart: unless-stopped
     depends_on: [cloud-sql-proxy]
