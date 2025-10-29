@@ -1,0 +1,36 @@
+version: "3.9"
+services:
+  n8n:
+    image: asia-south1-docker.pkg.dev/buzzi-ai/n8n/n8n:latest
+    env_file: .env
+    restart: unless-stopped
+    depends_on: [cloud-sql-proxy]
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks: [n8nnet]
+
+  cloud-sql-proxy:
+    image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.18.3
+    command:
+      - "--address=0.0.0.0"
+      - "--port=5432"
+      # Use your instance connection name:
+      - "buzzi-ai:asia-south1:n8n"
+    restart: unless-stopped
+    networks: [n8nnet]
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on: [n8n]
+    networks: [n8nnet]
+
+volumes:
+  n8n_data:
+
+networks:
+  n8nnet:
+    driver: bridge
